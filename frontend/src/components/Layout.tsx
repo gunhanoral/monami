@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
+import { styled, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MuiDrawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
@@ -19,7 +19,11 @@ import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import RouterIcon from '@mui/icons-material/Router';
 import GridOnIcon from '@mui/icons-material/GridOn';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import getTheme from '../theme';
+import Logo from './Logo';
 
 const drawerWidth: number = 240;
 
@@ -71,17 +75,20 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
   }),
 );
 
-const defaultTheme = createTheme({
-    palette: {
-        mode: 'dark',
-    }
-});
-
 export default function Layout() {
   const [open, setOpen] = React.useState(true);
+  const [mode, setMode] = React.useState<'light' | 'dark'>('light');
+
+  const theme = React.useMemo(() => getTheme(mode), [mode]);
+
   const toggleDrawer = () => {
     setOpen(!open);
   };
+  
+  const toggleColorMode = () => {
+    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+  };
+
   const location = useLocation();
 
   const getPageTitle = (pathname: string) => {
@@ -92,10 +99,10 @@ export default function Layout() {
   }
 
   return (
-    <ThemeProvider theme={defaultTheme}>
+    <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
-        <AppBar position="absolute" open={open}>
+        <AppBar position="absolute" open={open} elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
           <Toolbar
             sx={{
               pr: '24px', // keep right padding when drawer closed
@@ -118,10 +125,13 @@ export default function Layout() {
               variant="h6"
               color="inherit"
               noWrap
-              sx={{ flexGrow: 1 }}
+              sx={{ flexGrow: 1, color: theme.palette.text.primary, fontWeight: 700 }}
             >
               {getPageTitle(location.pathname)}
             </Typography>
+            <IconButton onClick={toggleColorMode} color="inherit">
+              {mode === 'dark' ? <LightModeIcon sx={{ color: theme.palette.warning.main }} /> : <DarkModeIcon sx={{ color: theme.palette.text.secondary }} />}
+            </IconButton>
           </Toolbar>
         </AppBar>
         <Drawer variant="permanent" open={open}>
@@ -129,30 +139,33 @@ export default function Layout() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
               px: [1],
+              pl: 2
             }}
           >
-            <Typography variant="h6" sx={{ flexGrow: 1, ml: 2 }}>Monami</Typography>
+            <Box sx={{ display: open ? 'block' : 'none' }}>
+                <Logo />
+            </Box>
             <IconButton onClick={toggleDrawer}>
               <ChevronLeftIcon />
             </IconButton>
           </Toolbar>
-          <Divider />
-          <List component="nav">
-            <ListItemButton component={Link} to="/">
+          <Divider sx={{ borderStyle: 'dashed' }} />
+          <List component="nav" sx={{ px: 2, pt: 2 }}>
+            <ListItemButton component={Link} to="/" selected={location.pathname === '/'}>
               <ListItemIcon>
                 <DashboardIcon />
               </ListItemIcon>
               <ListItemText primary="Dashboard" />
             </ListItemButton>
-            <ListItemButton component={Link} to="/vrfs">
+            <ListItemButton component={Link} to="/vrfs" selected={location.pathname.startsWith('/vrfs')}>
               <ListItemIcon>
                 <RouterIcon />
               </ListItemIcon>
               <ListItemText primary="VRFs" />
             </ListItemButton>
-            <ListItemButton component={Link} to="/easy-leak">
+            <ListItemButton component={Link} to="/easy-leak" selected={location.pathname === '/easy-leak'}>
               <ListItemIcon>
                 <GridOnIcon />
               </ListItemIcon>
@@ -163,10 +176,7 @@ export default function Layout() {
         <Box
           component="main"
           sx={{
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'light'
-                ? theme.palette.grey[100]
-                : theme.palette.grey[900],
+            backgroundColor: (theme) => theme.palette.background.default,
             flexGrow: 1,
             height: '100vh',
             overflow: 'auto',
