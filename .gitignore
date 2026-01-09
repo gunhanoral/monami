@@ -9,4 +9,18 @@ wheels/
 # Virtual environments
 .venv
 
+# Neo4j Data
 neo4j/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store

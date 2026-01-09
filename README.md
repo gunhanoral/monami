@@ -47,3 +47,26 @@ Backend service for managing MPBGP EVPN routes, VRFs, Prefixes, and Route Target
 - `POST /api/v1/vrfs/.../targets/import`: Add import RT.
 - `POST /api/v1/vrfs/.../targets/export`: Add export RT.
 - `POST /api/v1/vrfs/.../prefixes`: Add prefix.
+
+## Generating Sample Data
+
+A script is provided to generate sample data for testing and development:
+
+```bash
+# Generate 5 VRFs with default settings
+python scripts/generate_data.py
+
+# Customize the generation
+python scripts/generate_data.py --num-vrfs 10 --namespace production --imports 3 --exports 3 --prefixes 5
+
+# Use a different API URL
+python scripts/generate_data.py --api-url http://localhost:8000
+```
+
+Options:
+- `--api-url`: Base URL of the API (default: http://localhost:8000)
+- `--num-vrfs`: Number of VRFs to create (default: 5)
+- `--namespace`: Namespace for VRFs (default: default)
+- `--imports`: Number of import route targets per VRF (default: 2)
+- `--exports`: Number of export route targets per VRF (default: 2)
+- `--prefixes`: Number of prefixes per VRF (default: 3)
