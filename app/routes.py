@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
+from neomodel import db
 from app.models import VRF, RouteTarget, Prefix
-from app.schemas import VRFCreate, VRFResponse, RouteTargetSchema, PrefixSchema
+from app.schemas import VRFCreate, VRFResponse, RouteTargetSchema, PrefixSchema, PrefixDetail
 
 
 router = APIRouter()
@@ -62,6 +63,34 @@ def get_vrf(namespace: str, name: str):
         exports=[rt.rt for rt in vrf.exports],
         prefixes=[p.cidr for p in vrf.prefixes]
     )
+
+@router.get("/vrfs/{namespace}/{name}/prefixes", response_model=list[PrefixDetail])
+def get_vrf_prefixes(namespace: str, name: str):
+    vrf = VRF.nodes.first_or_none(namespace=namespace, name=name)
+    if not vrf:
+        raise HTTPException(status_code=404, detail="VRF not found")
+    
+    query = """
+    MATCH (v:VRF {namespace: $namespace, name: $name})-[:IMPORTS]->(rt:RouteTarget)<-[:EXPORTS]-(source:VRF)<-[:BELONGS_TO]-(p:Prefix)
+    WHERE source <> v
+    RETURN p.cidr as cidr, true as is_learned, source.name as source_name, source.namespace as source_namespace
+    UNION
+    MATCH (v:VRF {namespace: $namespace, name: $name})<-[:BELONGS_TO]-(p:Prefix)
+    RETURN p.cidr as cidr, false as is_learned, null as source_name, null as source_namespace
+    """
+    
+    results, _ = db.cypher_query(query, {'namespace': namespace, 'name': name})
+    
+    prefixes = []
+    for row in results:
+        prefixes.append(PrefixDetail(
+            cidr=row[0],
+            is_learned=row[1],
+            source_vrf=row[2],
+            source_namespace=row[3]
+        ))
+        
+    return prefixes
 
 @router.delete("/vrfs/{namespace}/{name}")
 def delete_vrf(namespace: str, name: str):

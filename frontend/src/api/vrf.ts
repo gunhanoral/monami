@@ -15,6 +15,13 @@ export interface CreateVRFParams {
   rd: string;
 }
 
+export interface PrefixDetail {
+  cidr: string;
+  is_learned: boolean;
+  source_vrf?: string;
+  source_namespace?: string;
+}
+
 export const getVRFs = async (namespace?: string) => {
   const params = namespace ? { namespace } : {};
   const response = await client.get<VRF[]>('/vrfs/', { params });
@@ -28,6 +35,11 @@ export const createVRF = async (data: CreateVRFParams) => {
 
 export const getVRF = async (namespace: string, name: string) => {
   const response = await client.get<VRF>(`/vrfs/${namespace}/${name}`);
+  return response.data;
+};
+
+export const getVRFPrefixes = async (namespace: string, name: string) => {
+  const response = await client.get<PrefixDetail[]>(`/vrfs/${namespace}/${name}/prefixes`);
   return response.data;
 };
 

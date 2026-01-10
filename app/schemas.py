@@ -30,6 +30,12 @@ class PrefixSchema(BaseModel):
             raise ValueError('Invalid CIDR format')
         return v
 
+class PrefixDetail(BaseModel):
+    cidr: str
+    is_learned: bool
+    source_vrf: Optional[str] = None
+    source_namespace: Optional[str] = None
+
 class VRFCreate(BaseModel):
     name: str
     namespace: str = "default"

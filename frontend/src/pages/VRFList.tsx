@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import { getVRFs, createVRF, deleteVRF } from '../api/vrf';
-import type { VRF } from '../api/vrf';
-import { Box, Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, Alert, IconButton, List, ListItem, ListItemText, Chip, Tooltip, Typography } from '@mui/material';
+import { getVRFs, createVRF, deleteVRF, getVRFPrefixes } from '../api/vrf';
+import type { VRF, PrefixDetail } from '../api/vrf';
+import { Box, Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, Alert, IconButton, List, ListItem, ListItemText, Chip, Tooltip, Typography, CircularProgress } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
@@ -11,19 +11,13 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import InfoIcon from '@mui/icons-material/Info';
 import { useNavigate } from 'react-router-dom';
 
-interface PrefixInfo {
-  cidr: string;
-  isLearned: boolean;
-  sourceVRF?: string;
-  sourceNamespace?: string;
-}
-
 export default function VRFList() {
   const [vrfs, setVrfs] = useState<VRF[]>([]);
   const [open, setOpen] = useState(false);
   const [prefixDialogOpen, setPrefixDialogOpen] = useState(false);
   const [selectedVRF, setSelectedVRF] = useState<VRF | null>(null);
-  const [prefixes, setPrefixes] = useState<PrefixInfo[]>([]);
+  const [prefixes, setPrefixes] = useState<PrefixDetail[]>([]);
+  const [prefixesLoading, setPrefixesLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -73,49 +67,20 @@ export default function VRFList() {
       }
   }
 
-  const calculateLearnedPrefixes = (vrf: VRF, allVRFs: VRF[]): PrefixInfo[] => {
-    const prefixMap = new Map<string, PrefixInfo>();
-    
-    // Add owned prefixes
-    vrf.prefixes.forEach(cidr => {
-      prefixMap.set(cidr, { cidr, isLearned: false });
-    });
-    
-    // Find learned prefixes: VRFs that export RTs that this VRF imports
-    const importedRTs = new Set(vrf.imports);
-    
-    allVRFs.forEach(otherVRF => {
-      // Skip self
-      if (otherVRF.namespace === vrf.namespace && otherVRF.name === vrf.name) {
-        return;
-      }
-      
-      // Check if other VRF exports any RT that this VRF imports
-      const hasMatchingExport = otherVRF.exports.some(rt => importedRTs.has(rt));
-      
-      if (hasMatchingExport) {
-        // Add prefixes from this VRF as learned
-        otherVRF.prefixes.forEach(cidr => {
-          if (!prefixMap.has(cidr)) {
-            prefixMap.set(cidr, {
-              cidr,
-              isLearned: true,
-              sourceVRF: otherVRF.name,
-              sourceNamespace: otherVRF.namespace
-            });
-          }
-        });
-      }
-    });
-    
-    return Array.from(prefixMap.values());
-  };
-
-  const handleViewPrefixes = (vrf: VRF) => {
+  const handleViewPrefixes = async (vrf: VRF) => {
     setSelectedVRF(vrf);
-    const prefixList = calculateLearnedPrefixes(vrf, vrfs);
-    setPrefixes(prefixList);
     setPrefixDialogOpen(true);
+    setPrefixesLoading(true);
+    setPrefixes([]);
+    try {
+        const data = await getVRFPrefixes(vrf.namespace, vrf.name);
+        setPrefixes(data);
+    } catch (err: any) {
+        console.error(err);
+        setError('Failed to fetch prefixes');
+    } finally {
+        setPrefixesLoading(false);
+    }
   };
 
   const columns: GridColDef[] = [
@@ -249,7 +214,11 @@ export default function VRFList() {
           Prefixes for {selectedVRF?.namespace}/{selectedVRF?.name}
         </DialogTitle>
         <DialogContent>
-          {prefixes.length === 0 ? (
+          {prefixesLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+            </Box>
+          ) : prefixes.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               No prefixes found for this VRF.
             </Typography>
@@ -259,9 +228,9 @@ export default function VRFList() {
                 <ListItem
                   key={index}
                   secondaryAction={
-                    prefix.isLearned ? (
+                    prefix.is_learned ? (
                       <Tooltip 
-                        title={`Learned from ${prefix.sourceNamespace}/${prefix.sourceVRF}`}
+                        title={`Learned from ${prefix.source_namespace}/${prefix.source_vrf}`}
                         arrow
                       >
                         <Chip
@@ -286,9 +255,9 @@ export default function VRFList() {
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography variant="body1">{prefix.cidr}</Typography>
-                        {prefix.isLearned && (
+                        {prefix.is_learned && (
                           <Tooltip 
-                            title={`This prefix is learned from VRF ${prefix.sourceNamespace}/${prefix.sourceVRF} via import route target`}
+                            title={`This prefix is learned from VRF ${prefix.source_namespace}/${prefix.source_vrf} via import route target`}
                             arrow
                           >
                             <InfoIcon fontSize="small" color="info" />
