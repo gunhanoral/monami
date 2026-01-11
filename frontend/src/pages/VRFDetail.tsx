@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     Box, Typography, Paper, Grid, List, ListItem, ListItemText, 
@@ -25,6 +25,11 @@ export default function VRFDetail() {
     const [newExport, setNewExport] = useState('');
     const [newPrefix, setNewPrefix] = useState('');
 
+    // Input Refs
+    const importInputRef = useRef<HTMLInputElement>(null);
+    const exportInputRef = useRef<HTMLInputElement>(null);
+    const prefixInputRef = useRef<HTMLInputElement>(null);
+
     const fetchVRF = async () => {
         if (!namespace || !name) return;
         try {
@@ -48,9 +53,25 @@ export default function VRFDetail() {
         try {
             await addImport(vrf.namespace, vrf.name, newImport);
             setNewImport('');
-            fetchVRF();
+            await fetchVRF();
+            // Focus the input after fetch completes
+            setTimeout(() => {
+                const input = importInputRef.current;
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(0, 0);
+                }
+            }, 50);
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to add Import RT');
+            // Focus the input on error too
+            setTimeout(() => {
+                const input = importInputRef.current;
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(0, 0);
+                }
+            }, 50);
         }
     }
 
@@ -69,9 +90,25 @@ export default function VRFDetail() {
         try {
             await addExport(vrf.namespace, vrf.name, newExport);
             setNewExport('');
-            fetchVRF();
+            await fetchVRF();
+            // Focus the input after fetch completes
+            setTimeout(() => {
+                const input = exportInputRef.current;
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(0, 0);
+                }
+            }, 50);
         } catch (err: any) {
              setError(err.response?.data?.detail || 'Failed to add Export RT');
+            // Focus the input on error too
+            setTimeout(() => {
+                const input = exportInputRef.current;
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(0, 0);
+                }
+            }, 50);
         }
     }
 
@@ -90,9 +127,25 @@ export default function VRFDetail() {
         try {
             await addPrefix(vrf.namespace, vrf.name, newPrefix);
             setNewPrefix('');
-            fetchVRF();
+            await fetchVRF();
+            // Focus the input after fetch completes
+            setTimeout(() => {
+                const input = prefixInputRef.current;
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(0, 0);
+                }
+            }, 50);
         } catch (err: any) {
              setError(err.response?.data?.detail || 'Failed to add Prefix');
+            // Focus the input on error too
+            setTimeout(() => {
+                const input = prefixInputRef.current;
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(0, 0);
+                }
+            }, 50);
         }
     }
 
@@ -129,10 +182,16 @@ export default function VRFDetail() {
                         <Typography variant="h6" gutterBottom>Import RTs</Typography>
                         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                             <TextField 
+                                inputRef={importInputRef}
                                 size="small" 
                                 placeholder="ASN:NN" 
                                 value={newImport}
                                 onChange={(e) => setNewImport(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleAddImport();
+                                    }
+                                }}
                                 fullWidth
                             />
                             <Button variant="contained" onClick={handleAddImport}><AddIcon /></Button>
@@ -158,10 +217,16 @@ export default function VRFDetail() {
                         <Typography variant="h6" gutterBottom>Export RTs</Typography>
                         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                             <TextField 
+                                inputRef={exportInputRef}
                                 size="small" 
                                 placeholder="ASN:NN" 
                                 value={newExport}
                                 onChange={(e) => setNewExport(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleAddExport();
+                                    }
+                                }}
                                 fullWidth
                             />
                             <Button variant="contained" onClick={handleAddExport}><AddIcon /></Button>
@@ -187,10 +252,16 @@ export default function VRFDetail() {
                         <Typography variant="h6" gutterBottom>Prefixes</Typography>
                          <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                             <TextField 
+                                inputRef={prefixInputRef}
                                 size="small" 
                                 placeholder="10.0.0.0/24" 
                                 value={newPrefix}
                                 onChange={(e) => setNewPrefix(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleAddPrefix();
+                                    }
+                                }}
                                 fullWidth
                             />
                             <Button variant="contained" onClick={handleAddPrefix}><AddIcon /></Button>

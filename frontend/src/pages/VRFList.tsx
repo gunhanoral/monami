@@ -179,6 +179,11 @@ export default function VRFList() {
             variant="outlined"
             value={newNamespace}
             onChange={(e) => setNewNamespace(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleCreate();
+              }
+            }}
           />
           <TextField
             margin="dense"
@@ -187,6 +192,11 @@ export default function VRFList() {
             variant="outlined"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleCreate();
+              }
+            }}
           />
           <TextField
             margin="dense"
@@ -196,6 +206,11 @@ export default function VRFList() {
             placeholder="65000:100"
             value={newRD}
             onChange={(e) => setNewRD(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleCreate();
+              }
+            }}
           />
         </DialogContent>
         <DialogActions>
